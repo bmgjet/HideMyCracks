@@ -26,6 +26,12 @@ namespace Oxide.Plugins
             }
         }
 
+        void OnPlayerSleepEnded(BasePlayer current)
+        {
+            //Attaches mod to player waking up
+            AddHideCracksMod(current);
+        }
+
         void AddHideCracksMod(BasePlayer player)
         {
             if (player.GetComponent<HideCracksMod>() == null && !player.IsNpc)
