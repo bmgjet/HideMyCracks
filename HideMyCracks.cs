@@ -1,7 +1,7 @@
 using UnityEngine;
 namespace Oxide.Plugins
 {
-    [Info("HideMyCracks", "bmgjet", "1.0.0")]
+    [Info("HideMyCracks", "bmgjet", "1.0.1")]
     [Description("Hides the light shining though cracks")]
     public class HideMyCracks : RustPlugin
     {
@@ -65,6 +65,7 @@ namespace Oxide.Plugins
             private BasePlayer _player;
             private bool _darkened = false;
             public bool debug = false;
+            private Vector3 oldpos;
             private bool _isadmin;
             public string[] Triggers = new string[]
             {
@@ -72,10 +73,10 @@ namespace Oxide.Plugins
             "road_tunnel_double_slope_b_72m",
             //"terrain_trigger"
             };
-
             private void Awake()
             {
                 _player = GetComponent<BasePlayer>();
+                oldpos = _player.transform.localPosition;
                 _isadmin = _player.IsAdmin;
                 InvokeRepeating(Check, 0.5f, 0.5f);
             }
@@ -102,8 +103,32 @@ namespace Oxide.Plugins
                 {
                     return; //Return as soon as posiable if not useful.
                 }
+                //Dont keep checking if player not moving
+                if (Vector3.Distance(_player.transform.position, oldpos) < 8f)
+                {
+                    return;
+                }
+                oldpos = _player.transform.localPosition;
 
-                var hits = Physics.SphereCastAll(_player.transform.position, 0.1f, Vector3.down);
+                Vector3 forward = oldpos;             
+                //Gets a location infront/behind the player to ehance transition quality
+                if (_darkened)
+                {
+                    //trigger behind
+                    forward += _player.eyes.BodyForward() * 2;
+                }
+                else
+                {
+                    //trigger infront
+                    forward -= _player.eyes.BodyForward() * 2;
+                }
+                forward.y += 0.5f;
+                if (debug && _player.IsAdmin)
+                {
+                    //Draws where the players trigger point is.
+                    _player.SendConsoleCommand("ddraw.sphere", 8f, Color.red, forward, 0.5f);
+                }
+                var hits = Physics.SphereCastAll(forward, 0.5f, Vector3.up);
                 foreach (var hit in hits)
                 {
                     Collider bc = hit.GetCollider();
@@ -111,19 +136,19 @@ namespace Oxide.Plugins
                     {
                         continue;
                     }
-                    if (debug)
-                    {
-                        _player.ChatMessage(bc.name);
-                    }
-                    foreach(string t in Triggers) //Go though array of triggers.
+                    //if (debug) //Dump names of triggers into player chat
+                    //{
+                    //    _player.ChatMessage(bc.name);
+                    //}
+                    foreach (string t in Triggers) //Go though array of triggers.
                     {
                         if (bc.name.Contains(t) && !_darkened) //Checks player is in trigger and not already darkened
                         {
                             ChangeTime(24);
-                            _darkened = true;
+                             _darkened = true;
                             return; //return from thread as soon as can.
                         }
-                        else if (bc.name.Contains(t)  && _darkened) //Checks player is in trigger and not already darkened
+                        else if (bc.name.Contains(t) && _darkened) //Checks player is in trigger and not already darkened
                         {
                             return; //stop searching and return
                         }
@@ -132,7 +157,6 @@ namespace Oxide.Plugins
                 //Gets to this point if no trigger was found
                 if (_darkened)
                 {
-                    //removes midnight
                     ChangeTime(-1);
                     _darkened = false;
                 }
