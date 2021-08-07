@@ -64,9 +64,9 @@ namespace Oxide.Plugins
         {
             private BasePlayer _player;
             private bool _darkened = false;
+            private bool _isadmin;
             public bool debug = false;
             private Vector3 oldpos;
-            private bool _isadmin;
             public string[] Triggers = new string[]
             {
             "road_tunnel_double_str_a_36m",
@@ -110,7 +110,7 @@ namespace Oxide.Plugins
                 }
                 oldpos = _player.transform.localPosition;
 
-                Vector3 forward = oldpos;             
+                Vector3 forward = oldpos;
                 //Gets a location infront/behind the player to ehance transition quality
                 if (_darkened)
                 {
@@ -128,7 +128,7 @@ namespace Oxide.Plugins
                     //Draws where the players trigger point is.
                     _player.SendConsoleCommand("ddraw.sphere", 8f, Color.red, forward, 0.5f);
                 }
-                var hits = Physics.SphereCastAll(forward, 0.5f, Vector3.up);
+                var hits = Physics.SphereCastAll(forward, 0.5f, Vector3.one);
                 foreach (var hit in hits)
                 {
                     Collider bc = hit.GetCollider();
@@ -145,7 +145,7 @@ namespace Oxide.Plugins
                         if (bc.name.Contains(t) && !_darkened) //Checks player is in trigger and not already darkened
                         {
                             ChangeTime(24);
-                             _darkened = true;
+                            _darkened = true;
                             return; //return from thread as soon as can.
                         }
                         else if (bc.name.Contains(t) && _darkened) //Checks player is in trigger and not already darkened
